@@ -21,32 +21,53 @@ class PIStage(Stage.Stage):
         self.velocity = velocity  # unit: mm/s
         self.ser = serial.Serial()
 
-    def connect(self):
-        self.PI_connect()
+    def connect(self, controller_serial_number):
+        self.PI_connect(controller_serial_number)
         self.PI_setup()
 
-    def PI_connect(self):
-        self.ser = serial.Serial(       # baudrate, timeout, bytesize, parity and stopbits values copied from PITerminal standard values
-            port=self.selectStagePort(),
-            baudrate=57600,
-            timeout=1,
-            bytesize=8,
-            parity='N',
-            stopbits=1)
-        #
-        # confirm connection:
-        print('connection established, stage respond on command \"IDN?\":')
-        self.ser.write('IDN?\n')
-        print(self.PI_read())
-        #
+
+    def selectStagePort(self):
+        ports_available = list_ports.comports()
+        print(ports_available)
+        print('select device:')
+        for portindex, eachport in enumerate(ports_available):
+            print(str(portindex) + ' - ' + eachport.device + '\t' + eachport.description)
+        return ports_available[int(input())].device
+
+    def PI_connect(self, controller_serial_number):
+        '''connect to PI stage and confirm serial number'''
+        print(list_ports.comports())
+        for each_port in list_ports.comports():
+            if each_port.manufacturer == 'PI':
+                self.ser = serial.Serial(   # baudrate, timeout, bytesize, parity and stopbits values copied from PITerminal standard values
+                    port=each_port.device,
+                    baudrate=57600,
+                    timeout=1,
+                    bytesize=8,
+                    parity='N',
+                    stopbits=1)
+                print('test connection established to device:' + each_port.device)
+                # test connection:
+                self.ser.write('IDN?\n')
+                response_idn = self.PI_read()
+                current_controller_serial_number = response_idn[0].split(',')[2]
+                # int conversion in if branch is to get rid of leading zero
+                if int(current_controller_serial_number) == int(controller_serial_number):
+                    print('connection established, stage respond on command \"IDN?\":')
+                    print(response_idn)
+                    return
+                self.ser.close()
+                print('test connection closed')
+        print('connection failed:\n' +
+              'no controller with serial number ' + controller_serial_number + ' found.')
 
     def PI_setup(self): #needs reworking
         # get minimum positions:
         self.ser.write('TMN?\n')
         readbuffer = self.PI_read()
         for eachline in readbuffer:
-            if parse('{}={:e}{}', eachline)[0] == self.axis:
-                self.position_min = parse('{}={:e}{}', eachline)[1]
+            if parse('{}={:e}', eachline)[0] == self.axis:
+                self.position_min = parse('{}={:e}', eachline)[1]
         print('position_min is now set to: ' + str(self.position_min))
         self.pi_error_check()
         #
@@ -54,8 +75,8 @@ class PIStage(Stage.Stage):
         self.ser.write('TMX?\n')
         readbuffer = self.PI_read()
         for eachline in readbuffer:
-            if parse('{}={:e}{}', eachline)[0] == self.axis:
-                self.position_max = parse('{}={:e}{}', eachline)[1]
+            if parse('{}={:e}', eachline)[0] == self.axis:
+                self.position_max = parse('{}={:e}', eachline)[1]
         print('position_max is now set to: ' + str(self.position_max))
         self.pi_error_check()
         #
@@ -103,8 +124,14 @@ class PIStage(Stage.Stage):
         for eachline in self.PI_read():
             print(eachline)
 
-    def PI_read(self):  # needs more elegant solution (wit less waittime)
-        return self.ser.readlines()
+    def PI_read(self):
+        '''read stage respond'''
+        line_current = self.ser.read_until('\n')
+        lines_read = [line_current.strip()]
+        while line_current[-2]==' ':
+            line_current = self.ser.read_until('\n')
+            lines_read.append(line_current.strip())
+        return lines_read
 
     def PI_servo(self, axisID):
         self.ser.write('SVO ' + axisID + ' 1\n')
@@ -119,11 +146,3 @@ class PIStage(Stage.Stage):
             print('Controller reports Error Code: ' + readbuffer[0])
         if readbuffer[0][0] != '0':
             exit()
-
-    def selectStagePort(self):
-        ports_available = list_ports.comports()
-        print(ports_available)
-        print('select device:')
-        for portindex, eachport in enumerate(ports_available):
-            print(str(portindex) + ' - ' + eachport.device + '\t' + eachport.description)
-        return ports_available[int(input())].device

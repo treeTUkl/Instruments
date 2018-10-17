@@ -25,6 +25,7 @@ class PIStage(Stage.Stage):
         self.pi_connect()
         self.pi_handle_limits()
         self.pi_set_velocity()
+        self.ser.write(('SVO ' + self.axis + ' 1\n').encode())
         self.pi_zero_reference_move()
 
     def disconnect(self):
@@ -36,13 +37,16 @@ class PIStage(Stage.Stage):
 
         time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
         if self.position_min <= new_position <= self.position_max:
-            self.pi_servo()
-            self.ser.write('MOV ' + self.axis + ' ' + str(new_position) + '\n')
-            self.position_current = new_position
-            time.sleep(time_to_sleep)
-            print('Stage was moved to ' + str(new_position))
+            if self.pi_servo_check():
+                self.ser.write(('MOV ' + self.axis + ' ' + str(new_position) + '\n').encode())
+                self.position_current = new_position
+                time.sleep(time_to_sleep)
+                print('Stage was moved to ' + str(new_position))
+            else:
+                print('stage not moved')
         else:
-            print('position is out of range')
+            print('position: ' + str(new_position) + ' is out of range')
+        self.pi_error_check()
 
     def position_get(self):
         """return stage position"""
@@ -64,21 +68,21 @@ class PIStage(Stage.Stage):
                     # int conversion is to get rid of leading zero
                     print('connection established, stage respond on command \"IDN?\":')
                     print(response_idn)
+                    self.pi_error_check(force_output=True)
                     return
                 self.ser.close()
                 print('test connection closed')
         print('connection failed:\n' +
-              'no controller with serial number ' + controller_serial_number + ' found.')
+                        'no controller with serial number ' + self.controller_serial_number + ' found.')
+        exit()
 
     def pi_handle_limits(self):
         """save minimum and maximum position"""
-        # set minimum positions:
+        # get minimum positions:
         for line in self.pi_request('TMN?\n'):
             if line.split('=')[0] == self.axis:
                 self.position_min = float(line.split('=')[1])
         print('position_min is now set to: ' + str(self.position_min))
-        self.pi_error_check()
-        #
         # get maximum positions:
         for line in self.pi_request('TMX?\n'):
             if line.split('=')[0] == self.axis:
@@ -86,45 +90,47 @@ class PIStage(Stage.Stage):
         print('position_max is now set to: ' + str(self.position_max))
         self.pi_error_check()
 
-    def pi_set_velocity(self):
-        self.ser.write('VEL ' + self.axis + ' ' + str(self.velocity) + '\n')
-        print('velocities:')
-        print(self.pi_request('VEL?\n'))
-        self.pi_error_check()
-
     def pi_zero_reference_move(self):
-        self.pi_error_check()
-        self.ser.write('FRF 1\n')
-        time.sleep(5)  # this leaves room for optimization
-        self.pi_error_check()
-        print('FRF result:')
+        self.ser.write(('FRF ' + self.axis + '\n').encode())
+        # this 5s timer leaves room for optimization
+        # nevertheless, reference moves are expected to be pretty rare (only on startup), so it won't cause much delay
+        time.sleep(5)
+        print('FRF result:', end=' ')
         print(self.pi_request('FRF?\n'))
         self.pi_error_check()
 
     def pi_request(self, request_command):
-        """request controller respond"""
+        """request controller respond, return array of read lines"""
 
         self.ser.reset_input_buffer()
-        self.ser.write(request_command)
-        line_current = self.ser.read_until('\n')
+        self.ser.write(request_command.encode())
+        line_current = self.ser.read_until('\n'.encode()).decode()
         lines_read = [line_current.strip()]
         while line_current[-2] == ' ':
-            line_current = self.ser.read_until('\n')
+            line_current = self.ser.read_until('\n'.encode()).decode()
             lines_read.append(line_current.strip())
         return lines_read
 
-    def pi_servo(self):
-        """check servo state"""
+    def pi_set_velocity(self):
+        self.ser.write(('VEL ' + self.axis + ' ' + str(self.velocity) + '\n').encode())
+        print('velocity is now set to:', end=' ')
+        print(self.pi_request('VEL?\n'))
+        self.pi_error_check()
 
-        self.ser.write('SVO ' + self.axis + ' 1\n')
-        print('servo state:')
-        print(self.pi_request('SVO? ' + self.axis + '\n'))
+    def pi_servo_check(self):
+        """checks if servo is turned on"""
+
+        for svo_answer_line in self.pi_request('SVO?\n'):
+            if svo_answer_line.split('=') == [self.axis, '0']:
+                print('servo not turned on')
+                return False
+        return True
 
     def pi_error_check(self, force_output=False):
-        """request controller errors"""
+        """request current controller error report"""
 
-        err_answer = self.pi_request('ERR?\n')
-        if err_answer[0][0] != '0' or force_output:
-            print('Controller reports Error Code: ' + err_answer[0])
-        if err_answer[0][0] != '0':
-            exit()
+        err_answer_first_line = self.pi_request('ERR?\n')[0]
+        if err_answer_first_line[0] != '0' or force_output:
+            print('Controller reports Error Code: ' + err_answer_first_line[0])
+        if err_answer_first_line[0] != '0':
+            exit()  # maybe find sth better when tango + css implementation is running

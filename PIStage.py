@@ -20,8 +20,10 @@ class PIStage(Stage.Stage):
         self.controller_serial_number = controller_serial_number
         self.velocity = velocity  # unit: mm/s
         self.ser = serial.Serial()
+        self.logfile = None
 
     def connect(self):
+        self.logfile = open('PIStageLog.txt', 'a')
         self.pi_connect()
         self.pi_handle_limits()
         self.pi_set_velocity()
@@ -31,6 +33,7 @@ class PIStage(Stage.Stage):
     def disconnect(self):
         self.ser.close()
         print('Connection has been closed')
+        self.logfile.close()
 
     def move_absolute(self, new_position):
         """Move the stage to the given position in its range"""
@@ -133,4 +136,5 @@ class PIStage(Stage.Stage):
         if err_answer_first_line[0] != '0' or force_output:
             print('Controller reports Error Code: ' + err_answer_first_line[0])
         if err_answer_first_line[0] != '0':
-            exit()  # maybe find sth better when tango + css implementation is running
+            self.logfile.write(time.strftime('%y%m%d %H:%M:%S') + ' ' + self.controller_serial_number +
+                          ' - Controller reports Error Code: ' + err_answer_first_line[0] + '\n')

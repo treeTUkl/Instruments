@@ -15,8 +15,9 @@ from serial.tools import list_ports
 class PIStage(Stage.Stage):
 
     def __init__(self, controller_serial_number, axis='1', velocity=2):
+        # inherits position variables in unit: mm
         super(PIStage, self).__init__()
-        self.axis = axis
+        self.axis = axis  # axis id can be any string
         self.controller_serial_number = controller_serial_number
         self.velocity = velocity  # unit: mm/s
         self.ser = serial.Serial()
@@ -44,11 +45,11 @@ class PIStage(Stage.Stage):
                 self.ser.write(('MOV ' + self.axis + ' ' + str(new_position) + '\n').encode())
                 self.position_current = new_position
                 time.sleep(time_to_sleep)
-                print('Stage was moved to ' + str(new_position))
+                print('Stage was moved to ' + str(new_position) + ' mm')
             else:
                 print('stage not moved')
         else:
-            print('position: ' + str(new_position) + ' is out of range')
+            print('position: ' + str(new_position) + ' mm is out of range')
         self.pi_error_check()
 
     def position_get(self):
@@ -85,12 +86,12 @@ class PIStage(Stage.Stage):
         for line in self.pi_request('TMN?\n'):
             if line.split('=')[0] == self.axis:
                 self.position_min = float(line.split('=')[1])
-        print('position_min is now set to: ' + str(self.position_min))
+        print('position_min is now set to: ' + str(self.position_min) + ' mm')
         # get maximum positions:
         for line in self.pi_request('TMX?\n'):
             if line.split('=')[0] == self.axis:
                 self.position_max = float(line.split('=')[1])
-        print('position_max is now set to: ' + str(self.position_max))
+        print('position_max is now set to: ' + str(self.position_max) + ' mm')
         self.pi_error_check()
 
     def pi_zero_reference_move(self):
@@ -99,7 +100,10 @@ class PIStage(Stage.Stage):
         # nevertheless, reference moves are expected to be pretty rare (only on startup), so it won't cause much delay
         time.sleep(5)
         print('FRF result:', end=' ')
-        print(self.pi_request('FRF?\n'))
+        if self.pi_request('FRF? ' + self.axis + '\n')[0].split('=')[1] == '1':
+            print('successful')
+        else:
+            print('not successfull, return value on FRF? request was not 1')
         self.pi_error_check()
 
     def pi_request(self, request_command):
@@ -117,7 +121,7 @@ class PIStage(Stage.Stage):
     def pi_set_velocity(self):
         self.ser.write(('VEL ' + self.axis + ' ' + str(self.velocity) + '\n').encode())
         print('velocity is now set to:', end=' ')
-        print(self.pi_request('VEL?\n'))
+        print(str(self.pi_request('VEL? ' + self.axis + '\n')[0].split('=')[1]) + ' mm/s')
         self.pi_error_check()
 
     def pi_servo_check(self):
@@ -136,5 +140,5 @@ class PIStage(Stage.Stage):
         if err_answer_first_line[0] != '0' or force_output:
             print('Controller reports Error Code: ' + err_answer_first_line[0])
         if err_answer_first_line[0] != '0':
-            self.logfile.write(time.strftime('%y%m%d %H:%M:%S') + ' ' + self.controller_serial_number +
+            self.logfile.write(time.strftime('%y%m%d %H:%M:%S') + ' S/N:' + self.controller_serial_number +
                           ' - Controller reports Error Code: ' + err_answer_first_line[0] + '\n')

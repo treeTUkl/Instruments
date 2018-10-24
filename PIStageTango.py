@@ -1,31 +1,35 @@
 import PIStage
-import time
-from PyTango import AttrWriteType, DispLevel
+from tango import AttrQuality, AttrWriteType, DispLevel
 from PyTango.server import run
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command, pipe
+from PyTango.server import class_property, device_property
 
+stage = PIStage.PIStage('117018374')
 
 class PIStageTango(Device, metaclass=DeviceMeta):
 
-    c413 = PIStage.PIStage('117018374')
-    c413.connect()
+
+
+    stage.connect()
+    testpos = float(stage.position_get())
+    print(testpos)
 
     position = attribute(label="Position", dtype=float,
                         display_level=DispLevel.EXPERT,
                         access=AttrWriteType.READ,
                         unit="mm",
-                        min_value=c413.position_min, max_value=c413.position_max,
+                        min_value=stage.position_min, max_value=stage.position_max,
                         fget="position_get",
                         doc="stage position")
 
     @attribute
     def position_get(self):
-        return c413.position_get()
+        return float(stage.position_get())
 
     @command(dtype_in=float)
-    def move_absolute(self, position_new):
-        c413.move_absolute(position_new)
+    def move_absolute(self):
+        # stage.move_absolute(5)
         print('moved stage...TANGO')
 
     @pipe

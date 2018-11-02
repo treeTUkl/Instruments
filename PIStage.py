@@ -21,10 +21,9 @@ class PIStage(Stage.Stage):
         self.controller_serial_number = controller_serial_number
         self.velocity = velocity  # unit: mm/s
         self.ser = serial.Serial()
-        self.logfile = None
+        self.logfile_name = 'PIStageLog.txt'
 
     def connect(self):
-        self.logfile = open('PIStageLog.txt', 'a')
         self.pi_connect()
         self.pi_handle_limits()
         self.pi_set_velocity()
@@ -34,7 +33,6 @@ class PIStage(Stage.Stage):
     def disconnect(self):
         self.ser.close()
         print('Connection has been closed')
-        self.logfile.close()
 
     def move_absolute(self, new_position):
         """Move the stage to the given position in its range"""
@@ -57,7 +55,7 @@ class PIStage(Stage.Stage):
 
         for answer_line in self.pi_request('POS?\n'):
             if answer_line[:len(self.axis)] == self.axis:
-                return answer_line[len(self.axis) + 1:]
+                return float(answer_line[len(self.axis) + 1:])
 
     def pi_connect(self):
         """connect to PI stage controller and confirm serial number"""
@@ -66,10 +64,9 @@ class PIStage(Stage.Stage):
             if each_port.manufacturer == 'PI':
                 self.ser = serial.Serial(
                     port=each_port.device, baudrate=57600, timeout=1, bytesize=8, parity='N', stopbits=1)
-                print('test connection established to device:' + each_port.device)
                 response_idn = self.pi_request('IDN?\n')
+                # int conversion is to get rid of leading zero
                 if int(response_idn[0].split(',')[2]) == int(self.controller_serial_number):
-                    # int conversion is to get rid of leading zero
                     print('connection established, stage respond on command \"IDN?\":')
                     print(response_idn)
                     self.pi_error_check(force_output=True)
@@ -103,7 +100,7 @@ class PIStage(Stage.Stage):
         if self.pi_request('FRF? ' + self.axis + '\n')[0].split('=')[1] == '1':
             print('successful')
         else:
-            print('not successfull, return value on FRF? request was not 1')
+            print('not successfull, return value on request: \'FRF?\' was not 1')
         self.pi_error_check()
 
     def pi_request(self, request_command):
@@ -140,5 +137,10 @@ class PIStage(Stage.Stage):
         if err_answer_first_line[0] != '0' or force_output:
             print('Controller reports Error Code: ' + err_answer_first_line[0])
         if err_answer_first_line[0] != '0':
-            self.logfile.write(time.strftime('%y%m%d %H:%M:%S') + ' S/N:' + self.controller_serial_number +
-                          ' - Controller reports Error Code: ' + err_answer_first_line[0] + '\n')
+            self.pi_log('Controller reports Error Code: ' + err_answer_first_line[0])
+
+    def pi_log(self, message):
+        logfile = open(self.logfile_name, 'a')
+        logfile.write(time.strftime('%y%m%d %H:%M:%S') + ' S/N:' + self.controller_serial_number + ' - '
+                      + message + '\n')
+        logfile.close()

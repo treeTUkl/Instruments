@@ -5,13 +5,14 @@ from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command, pipe
 from PyTango.server import class_property, device_property
 
-stage = PIStage.PIStage('117018374')
+serial_number = '117018374'
+stage = PIStage.PIStage(serial_number)
 
 class PIStageTango(Device, metaclass=DeviceMeta):
 
-
-
+    frf = False
     stage.connect()
+    frf = True
     testpos = float(stage.position_get())
     print(testpos)
 
@@ -25,19 +26,23 @@ class PIStageTango(Device, metaclass=DeviceMeta):
 
     @attribute
     def position_get(self):
-        return float(stage.position_get())
+        return stage.position_get()
 
     @command(dtype_in=float)
-    def move_absolute(self):
-        # stage.move_absolute(5)
-        print('moved stage...TANGO')
+    def Move_absolute(self, new_pos):
+        stage.move_absolute(new_pos)
+        print('moved stage...TANGO to: ' + str(new_pos))
+
+    @command()
+    def Zero_reference_move(self):
+        stage.pi_zero_reference_move()
 
     @pipe
     def info(self):
         return ('Information',
                 dict(manufacturer='PI',
                      model='C-413.2GA',
-                     serial_number='117018374'))
+                     serial_number=serial_number))
 
 
 if __name__ == "__main__":

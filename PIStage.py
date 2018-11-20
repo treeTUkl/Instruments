@@ -5,6 +5,7 @@ Created on Tue Aug 7 16:00:00 2018
 @author: larpid
 """
 
+from __future__ import print_function  # python2 compatibility, can be deleted when using python3 again
 import Stage
 import sys
 import time

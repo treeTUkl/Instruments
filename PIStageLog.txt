@@ -15,3 +15,4 @@
 181102 09:55:59 S/N:117018374 - Controller reports Error Code: 5
 181102 09:56:05 S/N:117018374 - Controller reports Error Code: 5
 181102 09:56:14 S/N:117018374 - Controller reports Error Code: 5
+181122 14:05:15 S/N:117018374 - Controller reports Error Code: 2

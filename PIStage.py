@@ -5,7 +5,6 @@ Created on Tue Aug 7 16:00:00 2018
 @author: larpid
 """
 
-from __future__ import print_function  # python2 compatibility, can be deleted when using python3 again
 import Stage
 import sys
 import time
@@ -15,11 +14,11 @@ from serial.tools import list_ports
 
 class PIStage(Stage.Stage):
 
-    def __init__(self, controller_serial_number, axis='1', velocity=2):
+    def __init__(self, controller_serial, axis='1', velocity=2):
         # inherits position variables in unit: mm
         super(PIStage, self).__init__()
         self.axis = axis  # axis id can be any string
-        self.controller_serial_number = controller_serial_number
+        self.controller_serial = controller_serial
         self.velocity = velocity  # unit: mm/s
         self.ser = serial.Serial()
         self.logfile_name = 'PIStageLog.txt'
@@ -67,7 +66,7 @@ class PIStage(Stage.Stage):
                     port=each_port.device, baudrate=57600, timeout=1, bytesize=8, parity='N', stopbits=1)
                 response_idn = self.pi_request('IDN?\n')
                 # int conversion is to get rid of leading zero
-                if int(response_idn[0].split(',')[2]) == int(self.controller_serial_number):
+                if int(response_idn[0].split(',')[2]) == int(self.controller_serial):
                     print('connection established, stage respond on command \"IDN?\":')
                     print(response_idn)
                     self.pi_error_check(force_output=True)
@@ -75,7 +74,7 @@ class PIStage(Stage.Stage):
                 self.ser.close()
                 print('test connection closed')
         print('connection failed:\n' +
-                        'no controller with serial number ' + self.controller_serial_number + ' found.')
+                        'no controller with serial number ' + self.controller_serial + ' found.')
         exit()
 
     def pi_handle_limits(self):
@@ -142,6 +141,6 @@ class PIStage(Stage.Stage):
 
     def pi_log(self, message):
         logfile = open(self.logfile_name, 'a')
-        logfile.write(time.strftime('%y%m%d %H:%M:%S') + ' S/N:' + self.controller_serial_number + ' - '
+        logfile.write(time.strftime('%y%m%d %H:%M:%S') + ' S/N:' + self.controller_serial + ' - '
                       + message + '\n')
         logfile.close()

@@ -7,16 +7,31 @@ from PyTango.server import attribute, command, pipe
 from PyTango.server import class_property, device_property
 
 
-class PIStageTango(Device):  # , metaclass=DeviceMeta): (way to go on python3 instead of next line)
-    __metaclass__ = DeviceMeta
+class PIStageTango(Device, metaclass=DeviceMeta):
+
+    controller_serial = attribute(label="S/N",
+                                  access=AttrWriteType.READ,
+                                  fget="get_controller_serial")
 
     controller_serial_number = '117018374'
-    stage = PIStage.PIStage(controller_serial_number=controller_serial_number)
+
+    def get_controller_serial(self):
+        return controller_serial_number
+
+    stage = PIStage.PIStage(controller_serial=controller_serial_number)
     stage.connect()
 
     def init_device(self):
         Device.init_device(self)
         self.set_state(DevState.ON)
+
+    @attribute
+    def connect(self):
+        self.stage.connect()
+
+    @attribute
+    def disconnect(self):
+        self.stage.disconnect()
 
     position = attribute(label="Position", dtype=float,
                         display_level=DispLevel.EXPERT,
@@ -53,7 +68,7 @@ class PIStageTango(Device):  # , metaclass=DeviceMeta): (way to go on python3 in
         return ('Information',
                 dict(manufacturer='PI',
                      model='C-413.2GA',
-                     serial_number=self.controller_serial_number))
+                     serial_number=self.controller_serial))
 
 if __name__ == "__main__":
     run([PIStageTango])

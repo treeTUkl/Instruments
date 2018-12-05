@@ -1,6 +1,6 @@
 import PIStage
 from tango import AttrQuality, AttrWriteType, DispLevel
-from PyTango import DevState, DebugIt
+from PyTango import DevState, DebugIt, CmdArgType
 from PyTango.server import run
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command, pipe
@@ -11,12 +11,13 @@ class PIStageTango(Device, metaclass=DeviceMeta):
 
     controller_serial = attribute(label="S/N",
                                   access=AttrWriteType.READ,
+                                  dtype=CmdArgType.DevString,
                                   fget="get_controller_serial")
 
     controller_serial_number = '117018374'
 
     def get_controller_serial(self):
-        return controller_serial_number
+        return self.controller_serial_number
 
     stage = PIStage.PIStage(controller_serial=controller_serial_number)
     stage.connect()
@@ -25,13 +26,19 @@ class PIStageTango(Device, metaclass=DeviceMeta):
         Device.init_device(self)
         self.set_state(DevState.ON)
 
-    @attribute
-    def connect(self):
+    @attribute(access=AttrWriteType.WRITE, fset="exec_connect")
+    def connect(self, _):
         self.stage.connect()
 
-    @attribute
-    def disconnect(self):
+    def exec_connect(self, _):
+        print('connect test')
+
+    @attribute(access=AttrWriteType.WRITE)
+    def disconnect(self, _):
         self.stage.disconnect()
+
+    def write_disconnect(self, _):
+        pass
 
     position = attribute(label="Position", dtype=float,
                         display_level=DispLevel.EXPERT,

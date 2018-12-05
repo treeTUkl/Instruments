@@ -20,10 +20,13 @@ class PIStage(Stage.Stage):
         self.axis = axis  # axis id can be any string
         self.controller_serial = controller_serial
         self.velocity = velocity  # unit: mm/s
-        self.ser = serial.Serial()
+        self.ser = None
         self.logfile_name = 'PIStageLog.txt'
 
     def connect(self):
+        if self.ser is not None:
+            print('Device already connected')
+            return
         self.pi_connect()
         self.pi_handle_limits()
         self.pi_set_velocity()
@@ -32,6 +35,7 @@ class PIStage(Stage.Stage):
 
     def disconnect(self):
         self.ser.close()
+        self.ser = None
         print('Connection has been closed')
 
     def move_absolute(self, new_position):

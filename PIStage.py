@@ -6,10 +6,9 @@ Created on Tue Aug 7 16:00:00 2018
 """
 
 import Stage
-import sys
-import time
 import serial
 from serial.tools import list_ports
+import time
 
 
 class PIStage(Stage.Stage):
@@ -22,6 +21,7 @@ class PIStage(Stage.Stage):
         self.velocity = velocity  # unit: mm/s
         self.ser = None
         self.logfile_name = 'PIStageLog.txt'
+        self.last_error = 0
 
     def connect(self):
         if self.ser is not None:
@@ -34,32 +34,34 @@ class PIStage(Stage.Stage):
         self.pi_zero_reference_move()
 
     def disconnect(self):
-        self.ser.close()
-        self.ser = None
-        print('Connection has been closed')
+        if self.ser is not None:
+            self.ser.close()
+            self.ser = None
+            print('Connection has been closed')
 
     def move_absolute(self, new_position):
         """Move the stage to the given position in its range"""
 
-        time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
         if self.position_min <= new_position <= self.position_max:
             if self.pi_servo_check():
                 self.ser.write(('MOV ' + self.axis + ' ' + str(new_position) + '\n').encode())
                 self.position_current = new_position
-                time.sleep(time_to_sleep)
-                print('Stage was moved to ' + str(new_position) + ' mm')
+                print('Stage is moving to ' + str(new_position) + ' mm')
             else:
-                print('stage not moved')
+                print('stage not moved (servo problem)')
         else:
             print('position: ' + str(new_position) + ' mm is out of range')
         self.pi_error_check()
 
     def position_get(self):
         """return stage position"""
+        return float(self.pi_request('POS? ' + self.axis + '\n')[0][len(self.axis) + 1:]) - self.position_zero
 
-        for answer_line in self.pi_request('POS?\n'):
-            if answer_line[:len(self.axis)] == self.axis:
-                return float(answer_line[len(self.axis) + 1:])
+    def on_target_state(self):
+        if self.pi_request('ONT? ' + self.axis + '\n')[0][len(self.axis) + 1:] is '1':
+            return True
+        else:
+            return False
 
     def pi_connect(self):
         """connect to PI stage controller and confirm serial number"""
@@ -119,10 +121,16 @@ class PIStage(Stage.Stage):
             lines_read.append(line_current.strip())
         return lines_read
 
-    def pi_set_velocity(self):
-        self.ser.write(('VEL ' + self.axis + ' ' + str(self.velocity) + '\n').encode())
+    def pi_set_velocity(self, velocity=None):
+        """set stage and class velocity value in mm/s"""
+        if velocity is None:
+            velocity = self.velocity
+        self.ser.write(('VEL ' + self.axis + ' ' + str(velocity) + '\n').encode())
+        stage_velocity = float(self.pi_request('VEL? ' + self.axis + '\n')[0].split('=')[1])
+        self.velocity = stage_velocity
+
         print('velocity is now set to:', end=' ')
-        print(str(self.pi_request('VEL? ' + self.axis + '\n')[0].split('=')[1]) + ' mm/s')
+        print(str(stage_velocity) + ' mm/s')
         self.pi_error_check()
 
     def pi_servo_check(self):
@@ -139,9 +147,10 @@ class PIStage(Stage.Stage):
 
         err_answer_first_line = self.pi_request('ERR?\n')[0]
         if err_answer_first_line[0] != '0' or force_output:
-            print('Controller reports Error Code: ' + err_answer_first_line[0])
+            print('Controller reports Error Code: ' + err_answer_first_line)
         if err_answer_first_line[0] != '0':
-            self.pi_log('Controller reports Error Code: ' + err_answer_first_line[0])
+            self.pi_log('Controller reports Error Code: ' + err_answer_first_line)
+            self.last_error = err_answer_first_line
 
     def pi_log(self, message):
         logfile = open(self.logfile_name, 'a')

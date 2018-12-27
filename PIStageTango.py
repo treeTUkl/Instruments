@@ -1,26 +1,22 @@
 import PIStage
-from tango import AttrQuality, AttrWriteType, DispLevel
+from tango import AttrWriteType, DispLevel, GreenMode
 from PyTango import DevState, DebugIt, CmdArgType
 from PyTango.server import run
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command, pipe
-from PyTango.server import class_property, device_property
-# testimports
-from tango import Attr
-import tango
-import PyTango
 from PyTango import Device_4Impl, get_green_mode, set_green_mode
-from PyTango.device_server import LatestDeviceImpl
-import gevent
-from gevent import monkey
-monkey.patch_all()
+#import gevent
+#from gevent import monkey
+#monkey.patch_all()
 
 
 class PIStageTango(Device, metaclass=DeviceMeta):
 
     controller_serial_number = '117018374'
     stage = PIStage.PIStage(controller_serial=controller_serial_number)
-    #green_mode = tango.GreenMode.Gevent
+    #set_green_mode(GreenMode.Gevent)
+    #green_mode = GreenMode.Gevent
+    print(get_green_mode())
 
     def init_device(self):
         Device.init_device(self)

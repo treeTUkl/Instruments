@@ -42,10 +42,12 @@ class PIStage(Stage.Stage):
     def move_absolute(self, new_position):
         """Move the stage to the given position in its range"""
 
+        #time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
         if self.position_min <= new_position <= self.position_max:
             if self.pi_servo_check():
                 self.ser.write(('MOV ' + self.axis + ' ' + str(new_position) + '\n').encode())
                 self.position_current = new_position
+                #time.sleep(time_to_sleep)
                 print('Stage is moving to ' + str(new_position) + ' mm')
             else:
                 print('stage not moved (servo problem)')

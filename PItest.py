@@ -10,24 +10,28 @@ def delay(duration):
     print('delay over')
 
 
+def wait():
+    while not c413.on_target_state():
+        time.sleep(.01)
+        print(c413.position_get())
+        print("ONT: " + str(c413.on_target_state()))
+        print(c413.position_get())
+
+
 c413 = PIStage.PIStage('117018374')
 
 c413.connect()
 print(c413.last_error)
-c413.move_absolute(-4)
+c413.move_absolute(0)
+wait()
+print("ONT: " + str(c413.on_target_state()))
+c413.move_absolute(-.4)
+print("ONT: " + str(c413.on_target_state()))
+wait()
 tasks = [
     gevent.spawn(c413.move_absolute, 8),
-    gevent.spawn(delay, 5),
     gevent.spawn(delay, 5),
     gevent.spawn(delay, 5)
 ]
 gevent.joinall(tasks)
-c413.move_absolute(2)
-print(c413.on_target_state())
-c413.move_absolute(-9)
-c413.move_absolute(-40)
-c413.move_absolute(8.5)
-for i in range(10):
-    print(c413.position_get())
-    time.sleep(.001)
 c413.disconnect()

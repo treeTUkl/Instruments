@@ -24,14 +24,19 @@ class PIStage(Stage.Stage):
         self.last_error = 0
 
     def connect(self):
+        """connect to stage and return connection status"""
+
         if self.ser is not None:
             print('Device already connected')
-            return
-        self.pi_connect()
-        self.pi_handle_limits()
-        self.pi_set_velocity()
-        self.ser.write(('SVO ' + self.axis + ' 1\n').encode())
-        self.pi_zero_reference_move()
+            return True
+        if self.pi_connect():
+            self.pi_handle_limits()
+            self.pi_set_velocity()
+            self.ser.write(('SVO ' + self.axis + ' 1\n').encode())
+            self.pi_zero_reference_move()
+            return True
+        else:
+            return False
 
     def disconnect(self):
         if self.ser is not None:
@@ -39,16 +44,19 @@ class PIStage(Stage.Stage):
             self.ser = None
             print('Connection has been closed')
 
-    def move_absolute(self, new_position):
+    def move_absolute(self, new_position, sync=False):
         """Move the stage to the given position in its range"""
 
-        #time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
         if self.position_min <= new_position <= self.position_max:
             if self.pi_servo_check():
                 self.ser.write(('MOV ' + self.axis + ' ' + str(new_position) + '\n').encode())
                 self.position_current = new_position
-                #time.sleep(time_to_sleep)
-                print('Stage is moving to ' + str(new_position) + ' mm')
+                if sync:
+                    time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
+                    time.sleep(time_to_sleep)
+                    print('Stage was moved to ' + str(new_position) + ' mm')
+                else:
+                    print('Stage is moving to ' + str(new_position) + ' mm')
             else:
                 print('stage not moved (servo problem)')
         else:
@@ -60,7 +68,11 @@ class PIStage(Stage.Stage):
         return float(self.pi_request('POS? ' + self.axis + '\n')[0][len(self.axis) + 1:]) - self.position_zero
 
     def on_target_state(self):
-        if self.pi_request('ONT? ' + self.axis + '\n')[0][len(self.axis) + 1:] is '1':
+        """check whether stage is on target"""
+
+        test = self.pi_request('ONT? ' + self.axis + '\n')
+        if test[0].split('=')[1].strip() is '1':
+        #if self.pi_request('ONT? ' + self.axis + '\n')[0][len(self.axis) + 1:] is '1':
             return True
         else:
             return False
@@ -78,12 +90,12 @@ class PIStage(Stage.Stage):
                     print('connection established, stage respond on command \"IDN?\":')
                     print(response_idn)
                     self.pi_error_check(force_output=True)
-                    return
+                    return True
                 self.ser.close()
                 print('test connection closed')
         print('connection failed:\n' +
                         'no controller with serial number ' + self.controller_serial + ' found.')
-        exit()
+        return False
 
     def pi_handle_limits(self):
         """save minimum and maximum position"""

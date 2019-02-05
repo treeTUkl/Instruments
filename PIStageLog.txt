@@ -57,3 +57,11 @@
 181218 14:26:59 S/N:117018374 - Controller reports Error Code: =.647
 181218 14:27:07 S/N:117018374 - Controller reports Error Code: =5000
 181218 15:09:04 S/N:117018374 - Controller reports Error Code: 45
+190109 09:49:15 S/N:117018374 - Controller reports Error Code: 2
+190109 15:05:16 S/N:117018374 - Controller reports Error Code: 2
+190110 14:00:35 S/N:117018374 - Controller reports Error Code: 2
+190121 17:59:17 S/N:117018374 - Controller reports Error Code: 76
+190121 17:59:22 S/N:117018374 - Controller reports Error Code: 45
+190121 18:02:24 S/N:117018374 - Controller reports Error Code: 5
+190125 13:40:07 S/N:117018374 - Controller reports Error Code: 2
+190204 16:18:37 S/N:117018374 - Controller reports Error Code: 2

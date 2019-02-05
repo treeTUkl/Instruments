@@ -1,22 +1,15 @@
 import PIStage
-from tango import AttrWriteType, DispLevel, GreenMode
+from tango import AttrWriteType, DispLevel
 from PyTango import DevState, DebugIt, CmdArgType
 from PyTango.server import run
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command, pipe
-from PyTango import Device_4Impl, get_green_mode, set_green_mode
-#import gevent
-#from gevent import monkey
-#monkey.patch_all()
 
 
 class PIStageTango(Device, metaclass=DeviceMeta):
 
     controller_serial_number = '117018374'
     stage = PIStage.PIStage(controller_serial=controller_serial_number)
-    #set_green_mode(GreenMode.Gevent)
-    #green_mode = GreenMode.Gevent
-    print(get_green_mode())
 
     def init_device(self):
         Device.init_device(self)
@@ -28,8 +21,10 @@ class PIStageTango(Device, metaclass=DeviceMeta):
     @command
     def connect(self, _):
         self.set_state(DevState.INIT)
-        self.stage.connect()
-        self.set_state(DevState.ON)
+        if self.stage.connect():
+            self.set_state(DevState.ON)
+        else:
+            self.set_state(DevState.OFF)
 
     cmd_disconnect = attribute(access=AttrWriteType.WRITE,
                                fset="disconnect")
@@ -62,8 +57,12 @@ class PIStageTango(Device, metaclass=DeviceMeta):
     @command(dtype_in=float)
     def move_absolute(self, new_pos):
         self.set_state(DevState.MOVING)
-        #gevent.spawn(self.stage.move_absolute, new_pos)  # + self.zero_position)
         self.stage.move_absolute(new_pos)
+
+    @command(dtype_in=float)
+    def move_absolute_microm_sync(self, new_pos):
+        self.set_state(DevState.MOVING)
+        self.stage.move_absolute(new_pos, sync=True)
 
     @attribute(dtype=bool)
     def on_target_state(self):

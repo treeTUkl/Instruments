@@ -29,7 +29,9 @@ class RedPitayaPhotodiodeTango(Device, metaclass=DeviceMeta):
         self.rp_s.tx_txt('ACQ:START')
         self.rp_s.tx_txt('ACQ:TRIG NOW')
         self.rp_s.tx_txt('ACQ:SOUR1:DATA?')
-        buff_string = self.rp_s.rx_txt()
+
+        buff_string = self.rp_s.rx_txt()  # server often crashes when not receiving an answer here
+
         self.rp_s.tx_txt('ACQ:STOP')
 
         buff_strings = buff_string.strip('{}\n\r').replace("  ", "").split(',')
@@ -39,7 +41,7 @@ class RedPitayaPhotodiodeTango(Device, metaclass=DeviceMeta):
     @command
     def connect(self):
         if self.rp_s is None:
-            self.rp_s = scpi.scpi(self.IP, timeout=2000)  # timeout seems to have no effect (cause of crashes)
+            self.rp_s = scpi.scpi(self.IP)  # setting a timeout does not help (random crashes)
             self.rp_s.tx_txt('ACQ:DEC 1')
             self.rp_s.tx_txt('ACQ:AVG ON')
             self.rp_s.tx_txt('ACQ:SOUR1:GAIN HV')
@@ -50,7 +52,7 @@ class RedPitayaPhotodiodeTango(Device, metaclass=DeviceMeta):
         self.connect()
 
     @command
-    def disconnect(self, _=''):
+    def disconnect(self):
         if self.rp_s is not None:
             self.rp_s.close()
             self.rp_s = None

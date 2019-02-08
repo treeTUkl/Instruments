@@ -15,24 +15,28 @@ class PIStageTango(Device, metaclass=DeviceMeta):
         Device.init_device(self)
         self.set_state(DevState.OFF)
 
-    cmd_connect = attribute(access=AttrWriteType.WRITE,
-                            fset="connect")
+    cmd_connect = attribute(access=AttrWriteType.WRITE)
 
     @command
-    def connect(self, _):
+    def connect(self):
         self.set_state(DevState.INIT)
         if self.stage.connect():
             self.set_state(DevState.ON)
         else:
             self.set_state(DevState.OFF)
 
-    cmd_disconnect = attribute(access=AttrWriteType.WRITE,
-                               fset="disconnect")
+    def write_cmd_connect(self, _):
+        self.connect()
+
+    cmd_disconnect = attribute(access=AttrWriteType.WRITE)
 
     @command
-    def disconnect(self, _):
+    def disconnect(self):
         self.stage.disconnect()
         self.set_state(DevState.OFF)
+
+    def write_cmd_disconnect(self, _):
+        self.disconnect()
 
     @attribute(dtype=str)
     def controller_serial(self):
@@ -46,18 +50,20 @@ class PIStageTango(Device, metaclass=DeviceMeta):
                          fset="move_absolute",
                          doc="stages absolute position")
 
-    cmd_move_absolute = attribute(access=AttrWriteType.WRITE,
-                                  dtype=float,
-                                  unit="mm",
-                                  fset="move_absolute")
-
     def read_position(self):
         return self.stage.position_get()
+
+    cmd_move_absolute = attribute(access=AttrWriteType.WRITE,
+                                  dtype=float,
+                                  unit="mm")
 
     @command(dtype_in=float)
     def move_absolute(self, new_pos):
         self.set_state(DevState.MOVING)
         self.stage.move_absolute(new_pos)
+
+    def write_cmd_move_absolute(self, new_pos):
+        self.move_absolute(new_pos)
 
     @command(dtype_in=float)
     def move_absolute_microm_sync(self, new_pos):
@@ -95,18 +101,24 @@ class PIStageTango(Device, metaclass=DeviceMeta):
         self.stage.pi_set_velocity(velocity)
 
     cmd_set_zero_position = attribute(access=AttrWriteType.WRITE,
-                                      unit="mm",
-                                      fset="set_zero_position")
+                                      unit="mm",)
 
-    def set_zero_position(self, _):
+    @command
+    def set_zero_position(self):
         self.stage.set_zero_position()
 
-    cmd_zero_reference_move = attribute(access=AttrWriteType.WRITE,
-                                        fset="zero_reference_move")
+    def write_cmd_set_zero_position(self, _):
+        self.set_zero_position()
 
-    def zero_reference_move(self, _):
+    cmd_zero_reference_move = attribute(access=AttrWriteType.WRITE)
+
+    @command
+    def zero_reference_move(self):
         self.stage.pi_zero_reference_move()
         self.stage.pi_handle_limits()
+
+    def write_cmd_zero_reference_move(self, _):
+        self.zero_reference_move()
 
     @pipe
     def info(self):

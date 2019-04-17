@@ -28,6 +28,12 @@ class RedPitayaPhotodiodeTango(Device, metaclass=DeviceMeta):
     def read_voltage(self):
         self.rp_s.tx_txt('ACQ:START')
         self.rp_s.tx_txt('ACQ:TRIG NOW')
+
+        while True:
+            self.rp_s.tx_txt('ACQ:TRIG:STAT?')
+            if self.rp_s.rx_txt() == 'TD':
+                break
+
         self.rp_s.tx_txt('ACQ:SOUR1:DATA?')
 
         buff_string = self.rp_s.rx_txt()  # server often crashes when not receiving an answer here
@@ -42,7 +48,10 @@ class RedPitayaPhotodiodeTango(Device, metaclass=DeviceMeta):
     def connect(self):
         if self.rp_s is None:
             self.rp_s = scpi.scpi(self.IP)  # setting a timeout does not help (random crashes)
+            self.rp_s.tx_txt('ACQ:RST')
             self.rp_s.tx_txt('ACQ:DEC 1')
+            self.rp_s.tx_txt('ACQ:TRIG:DLY 16384')
+            self.rp_s.tx_txt('ACQ:DATA:UNITS VOLTS')
             self.rp_s.tx_txt('ACQ:AVG ON')
             self.rp_s.tx_txt('ACQ:SOUR1:GAIN HV')
             self.set_state(DevState.ON)

@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """
-Created on Tue Aug 7 16:00:00 2018
-
 @author: larpid
+
+Script handles connection and communication with stage via USB
 """
 
 import Stage
@@ -19,6 +18,8 @@ class PIStage(Stage.Stage):
         self.axis = axis  # axis id can be any string
         self.controller_serial = controller_serial
         self.velocity = velocity  # unit: mm/s
+        self.position_max = 10  # unit: mm
+        self.position_min = -10  # unit: mm
         self.ser = None
         self.logfile_name = 'PIStageLog.txt'
         self.last_error = 0
@@ -49,7 +50,7 @@ class PIStage(Stage.Stage):
 
         if self.position_min <= new_position <= self.position_max:
             if self.pi_servo_check():
-                self.ser.write(('MOV ' + self.axis + ' ' + str(new_position) + '\n').encode())
+                self.ser.write(('MOV ' + self.axis + ' ' + str(new_position + self.position_zero) + '\n').encode())
                 self.position_current = new_position
                 if sync:
                     time_to_sleep = (abs(self.position_current - new_position)) / self.velocity
@@ -63,19 +64,34 @@ class PIStage(Stage.Stage):
             print('position: ' + str(new_position) + ' mm is out of range')
         self.pi_error_check()
 
+    def move_relative(self, shift):
+        self.move_absolute(self.position_current + shift)
+
     def position_get(self):
         """return stage position"""
-        return float(self.pi_request('POS? ' + self.axis + '\n')[0][len(self.axis) + 1:]) - self.position_zero
+
+        return self.position_unshifted_get() - self.position_zero
+
+    def position_unshifted_get(self):
+        """return stage position without shifted zero"""
+
+        return float(self.pi_request('POS? ' + self.axis + '\n')[0][len(self.axis) + 1:])
 
     def on_target_state(self):
         """check whether stage is on target"""
 
         test = self.pi_request('ONT? ' + self.axis + '\n')
         if test[0].split('=')[1].strip() is '1':
-        #if self.pi_request('ONT? ' + self.axis + '\n')[0][len(self.axis) + 1:] is '1':
             return True
         else:
             return False
+
+    def set_zero_position(self):
+        """set current position as new zero"""
+        self.position_zero = self.position_zero + self.position_current
+        self.position_max -= self.position_current
+        self.position_min -= self.position_current
+        self.position_current = 0
 
     def pi_connect(self):
         """connect to PI stage controller and confirm serial number"""
@@ -94,33 +110,36 @@ class PIStage(Stage.Stage):
                 self.ser.close()
                 print('test connection closed')
         print('connection failed:\n' +
-                        'no controller with serial number ' + self.controller_serial + ' found.')
+              'no controller with serial number ' + self.controller_serial + ' found.')
         return False
 
     def pi_handle_limits(self):
         """save minimum and maximum position"""
+
         # get minimum positions:
         for line in self.pi_request('TMN?\n'):
             if line.split('=')[0] == self.axis:
-                self.position_min = float(line.split('=')[1])
+                self.position_min = float(line.split('=')[1]) - self.position_zero
         print('position_min is now set to: ' + str(self.position_min) + ' mm')
+
         # get maximum positions:
         for line in self.pi_request('TMX?\n'):
             if line.split('=')[0] == self.axis:
-                self.position_max = float(line.split('=')[1])
+                self.position_max = float(line.split('=')[1]) - self.position_zero
         print('position_max is now set to: ' + str(self.position_max) + ' mm')
         self.pi_error_check()
 
     def pi_zero_reference_move(self):
         self.ser.write(('FRF ' + self.axis + '\n').encode())
+
         # this 5s timer leaves room for optimization
         # nevertheless, reference moves are expected to be pretty rare (only on startup), so it won't cause much delay
         time.sleep(5)
         print('FRF result:', end=' ')
         if self.pi_request('FRF? ' + self.axis + '\n')[0].split('=')[1] == '1':
-            print('successful')
+            print('FRF successful')
         else:
-            print('not successfull, return value on request: \'FRF?\' was not 1')
+            print('FRF not successfull, return value on request: \'FRF?\' was not 1')
         self.pi_error_check()
 
     def pi_request(self, request_command):
@@ -128,8 +147,12 @@ class PIStage(Stage.Stage):
 
         self.ser.reset_input_buffer()
         self.ser.write(request_command.encode())
+
+        # read first line
         line_current = self.ser.read_until('\n'.encode()).decode()
         lines_read = [line_current.strip()]
+
+        # controller ends line on ' \n' instead of '\n' if it's not the responses last line
         while line_current[-2] == ' ':
             line_current = self.ser.read_until('\n'.encode()).decode()
             lines_read.append(line_current.strip())
@@ -137,14 +160,14 @@ class PIStage(Stage.Stage):
 
     def pi_set_velocity(self, velocity=None):
         """set stage and class velocity value in mm/s"""
+
         if velocity is None:
             velocity = self.velocity
         self.ser.write(('VEL ' + self.axis + ' ' + str(velocity) + '\n').encode())
         stage_velocity = float(self.pi_request('VEL? ' + self.axis + '\n')[0].split('=')[1])
         self.velocity = stage_velocity
 
-        print('velocity is now set to:', end=' ')
-        print(str(stage_velocity) + ' mm/s')
+        print('velocity is now set to:' + str(stage_velocity) + ' mm/s')
         self.pi_error_check()
 
     def pi_servo_check(self):
@@ -155,6 +178,9 @@ class PIStage(Stage.Stage):
                 print('servo not turned on')
                 return False
         return True
+
+    def pi_stop_motion(self):
+        self.ser.write('STP\n'.encode())
 
     def pi_error_check(self, force_output=False):
         """request current controller error report"""

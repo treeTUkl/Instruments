@@ -18,7 +18,6 @@ except OSError as err:
 def test_info(lib, device_id):
     print("\nGet device info")
     x_device_information = device_information_t()
-    lib.
     result = lib.get_device_information(device_id, byref(x_device_information))
     print("Result: " + repr(result))
     if result == Result.Ok:

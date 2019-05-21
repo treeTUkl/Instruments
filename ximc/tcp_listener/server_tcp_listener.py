@@ -31,39 +31,39 @@ while True:
     # Wait for a connection
     print('waiting for a connection')
     connection, client_address = sock.accept()
-"""accept() returns an open connection between the server and client, along with the address of the client.
- The connection is actually a different socket on another port (assigned by the kernel).
-  Data is read from the connection with recv() and transmitted with sendall()."""
+    """accept() returns an open connection between the server and client, along with the address of the client.
+     The connection is actually a different socket on another port (assigned by the kernel).
+      Data is read from the connection with recv() and transmitted with sendall()."""
 
-try:
-    print('connection from', client_address)
-    if client_address == LOCALHOST:
+    try:
+        print('connection from', client_address)
+        if client_address == LOCALHOST:
 
-        # Receive the data in small chunks and retransmit it
-        while True:
-            data = connection.recv(4)#we might need more than 4? but labview sagt 4
+            # Receive the data in small chunks and retransmit it
+            while True:
+                data = connection.recv(4)#we might need more than 4? but labview sagt 4
 
-            print('received "%s"' % data)
-            data = data.decode('utf-8') #might not needed if data ist already in string format
+                print('received "%s"' % data)
+                data = data.decode('utf-8') #might not needed if data ist already in string format
 
-            """
-            if data =POV 
-            
-            
-            if data= MOV
-                stage.move_absolute(self, new_position, sync=False):
-            
-            
-                print >> sys.stderr, 'sending data back to the client'
-                connection.sendall(data)
-            else:
-                print >> sys.stderr, 'no more data from', client_address
                 """
-            break
-    else:
-        print( sys.stderr, 'wrong connection. connection gets terminated')
-        connection.close()
+                if data =POV 
+                
+                
+                if data= MOV
+                    stage.move_absolute(self, new_position, sync=False):
+                
+                
+                    print >> sys.stderr, 'sending data back to the client'
+                    connection.sendall(data)
+                else:
+                    print >> sys.stderr, 'no more data from', client_address
+                    """
+                break
+        else:
+            print( sys.stderr, 'wrong connection. connection gets terminated')
+            connection.close()
 
-finally:
-    # Clean up the connection
-    connection.close()
+    finally:
+        # Clean up the connection
+        connection.close()

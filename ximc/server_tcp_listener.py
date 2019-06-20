@@ -6,7 +6,7 @@ import time
 # from  xxxxx import PIStage.py
 LOCALHOST = ''
 PORT = 2161
-# testing with standa_client
+#TODO testing with standa_client
 PORT = 54545
 LOCALHOST = 'localhost'
 
@@ -128,6 +128,7 @@ while connection:
             if not result:
                 time.sleep(2)
             connection = False
+
         elif data[:] == "LMOVE":
             stage.move_left()
             POS = "LMOVE"
@@ -153,6 +154,15 @@ while connection:
             POS = POS.encode()
             print('sending data back to the client')
             connection.sendall(POS)
+#########################################################
+        #gui control stuff
+        elif data[:] == "POSS":
+            stage.position_get()
+            POS = str(stage.position["position_current_Steps"]) + ", " + str(stage.position["position_current_uSteps"])
+            POS = POS.encode()
+            print('sending data back to the client')
+            connection.sendall(POS)
+
 
         else:
             print('got strange data: ' + data + ' do nothing with it')

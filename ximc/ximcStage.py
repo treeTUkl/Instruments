@@ -505,7 +505,7 @@ class StandaStage(Stage.Stage):
                     print('something went wrong!')
                     return y_status
     # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    # redpitaya stuff
+    # control gui stuff
 
 """
 if __name__ == "__main__":
@@ -550,4 +550,5 @@ if __name__ == "__main__":
     #^^^^^^^debuggen^^^^^^^^^^^^^^
 
     stage.disconnect()
+
 """

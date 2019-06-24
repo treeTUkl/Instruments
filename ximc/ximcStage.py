@@ -125,9 +125,13 @@ class StandaStage(Stage.Stage):
         print('\nMove Ab in steps aufgerufen!')
         self.position["position_new_Steps"] = new_position_fullSteps
         self.position["position_new_uSteps"] = new_position_uSteps
-        print('neue Position in steps: ' + repr(self.position["position_new_Steps"]) + ', uSteps' + repr(
+        print('neue Position in steps: ' + repr(self.position["position_new_Steps"]) + ', uSteps: ' + repr(
             self.position["position_new_uSteps"]))
-        self.lib.command_move(self.device_id, self.position["position_new_Steps"], self.position["position_new_uSteps"])
+        result=self.lib.command_move(self.device_id, self.position["position_new_Steps"], self.position["position_new_uSteps"])
+        if result == Result.Ok:
+            print('Move Ab in steps result ok!')
+        else:
+            print('Move Ab in steps result bad!')
         if self.statusHandler():
             print('Move Ab in steps has arrived!')
         else:

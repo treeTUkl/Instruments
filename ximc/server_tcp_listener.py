@@ -39,6 +39,7 @@ connection, client_address = sock.accept()  # TODO: verbindet sich nur einmal...
  The connection is actually a different socket on another port (assigned by the kernel).
   Data is read from the connection with recv() and transmitted with sendall()."""
 print('connection from', client_address)
+counter=0
 while connection:
 
     try:
@@ -52,24 +53,42 @@ while connection:
         print('\nreceived "%s"' % data)
         # data=data[2:]
         if data[:3] == "POS":
-            print('POS')
-            POS = stage.POS
-            print('pos in as: ' + str(POS))
-            print('sending data back to the client')
-            POS = str(POS)
-            POS = POS.encode()
-            connection.sendall(POS)
+            if data[:] == "POSS":
+                stage.position_get()
+                POS = str(stage.position["position_current_Steps"]) + ", " + str(stage.position["position_current_uSteps"])
+                POS = POS.encode()
+                print('sending data back to the client')
+                connection.sendall(POS)
+            else:
+                print('POS')
+                POS = stage.POS
+                print('pos in as: ' + str(POS))
+                print('sending data back to the client')
+                POS = str(POS)
+                POS = POS.encode()
+                connection.sendall(POS)
 
         elif data[:3] == "MOV":
-            new_position_in_as = float(data[3:]) / 10
-            print('MOV' + str(new_position_in_as))
-            stage.move_absolute_in_as(new_position_in_as)
-            POS = stage.POS
-            print('pos in as: ' + str(POS))
-            print('sending data back to the client')
-            POS = str(POS)
-            POS = POS.encode()
-            connection.sendall(POS)
+            if data[:4] == "MOVV":
+                result=data[4:].split(', ')
+                print('MOVV ' + str(result[0]) + ', ' + str(result[1]))
+                stage.move_absolute_in_steps(int(result[0]), int(result[1]))
+                POS = stage.POS
+                print('pos in as: ' + str(POS))
+                print('sending data back to the client')
+                POS = str(POS)
+                POS = POS.encode()
+                connection.sendall(POS)
+            else:
+                new_position_in_as = float(data[3:]) / 10
+                print('MOV' + str(new_position_in_as))
+                stage.move_absolute_in_as(new_position_in_as)
+                POS = stage.POS
+                print('pos in as: ' + str(POS))
+                print('sending data back to the client')
+                POS = str(POS)
+                POS = POS.encode()
+                connection.sendall(POS)
 
         elif data[:3] == "MVR":
             new_position_in_as = float(data[3:]) / 10
@@ -166,6 +185,11 @@ while connection:
 
         else:
             print('got strange data: ' + data + ' do nothing with it')
+            counter = counter + 1
+            if counter >= 20:
+                connection.close()
+                stage.disconnect()
+                break
             data = 0
 
     except socket.error:
@@ -173,6 +197,7 @@ while connection:
 
         connection.close()
         stage.disconnect()
+        break
 
     finally:
         # Clean up the connection

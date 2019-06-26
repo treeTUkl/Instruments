@@ -121,7 +121,7 @@ class StandaStage(Stage.Stage):
         else:
             print('Move Ab in as something went wrong!')
 
-    def move_absolute_in_steps(self, new_position_fullSteps, new_position_uSteps):
+    def move_absolute_in_steps(self, new_position_fullSteps, new_position_uSteps):#TODO: falls uSteps größer als 256, dann wird fahrergebnis negativ gewertet....
         print('\nMove Ab in steps aufgerufen!')
         self.position["position_new_Steps"] = new_position_fullSteps
         self.position["position_new_uSteps"] = new_position_uSteps
@@ -132,6 +132,7 @@ class StandaStage(Stage.Stage):
             print('Move Ab in steps result ok!')
         else:
             print('Move Ab in steps result bad!')
+            print('because we might still moving!')
         if self.statusHandler():
             print('Move Ab in steps has arrived!')
         else:
@@ -511,48 +512,48 @@ class StandaStage(Stage.Stage):
     # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     # control gui stuff
 
-"""
+
 if __name__ == "__main__":
     stage = StandaStage()
     stage.connect()
     stage.Standa_Status()
     stage.position_get()
     stage.Standa_get_position()
-
-    stage.Umrechnungsfaktor()
     stage.set_zero_position()
-    stage.Standa_get_position()
-    stage.move_absolute_in_as(6000)
-    stage.in_case_terra_sends_SDN()
-    stage.POS
-
-    stage.move_left()
-    time.sleep(2)
-    stage.fast_stop()#dont use me, its hurting
-    stage.stop_move()
-    stage.move_right()
-    time.sleep(1)
-    stage.stop_move()
-    value = stage.position_current_in_as()
-    #stage.fast_stop()
-
-    stage.read()
-    stage.write()
-    stage.move_relative_in_as(-105)
-    stage.move_absolute_in_as(7000)
-    stage.Standa_get_motor_settings()
-    # stage._Standa_set_motor_settings_()
-    #stage.Standa_get_motor_settings()
-    stage.Standa_get_engine_settings()
-
-    stage.set_zero_position()
-    stage.move_relative_in_as(105)
-    stage.POS
-    stage.go_home()
+    stage.move_absolute_in_as(153600)#TODO: Umrechnungen alle Richtig? vonwegen Terra und Gui to server_tcp to ximcStage
+    # stage.Umrechnungsfaktor()
+    # stage.set_zero_position()
+    # stage.Standa_get_position()
+    #
+    # stage.in_case_terra_sends_SDN()
+    # stage.POS
+    #
+    # stage.move_left()
+    # time.sleep(2)
+    # stage.fast_stop()#dont use me, its hurting
+    # stage.stop_move()
+    # stage.move_right()
+    # time.sleep(1)
+    # stage.stop_move()
+    # value = stage.position_current_in_as()
+    # #stage.fast_stop()
+    #
+    # stage.read()
+    # stage.write()
+    # stage.move_relative_in_as(-105)
+    # stage.move_absolute_in_as(7000)
+    # stage.Standa_get_motor_settings()
+    # # stage._Standa_set_motor_settings_()
+    # #stage.Standa_get_motor_settings()
+    # stage.Standa_get_engine_settings()
+    #
+    # stage.set_zero_position()
+    # stage.move_relative_in_as(105)
+    # stage.POS
+    # stage.go_home()
 
     # TODO debuggen~~~~~~~~
     #^^^^^^^debuggen^^^^^^^^^^^^^^
 
     stage.disconnect()
 
-"""

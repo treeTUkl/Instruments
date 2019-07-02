@@ -39,7 +39,7 @@ class StandaStage(Stage.Stage):
         self.configuration = {}
         self.load_configurution()
         self.position_zero = 0
-        self.TerraFaktor = 5
+        self.TerraFaktor = 1
         self.MicrostepMode = 1
         self.StepsPerRev = 1
         self.Laser = 633 * 10 ** -9  # should be 633*10^-9

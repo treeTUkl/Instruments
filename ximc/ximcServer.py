@@ -4,15 +4,16 @@ import time
 # import sys
 
 # from  xxxxx import PIStage.py
-LOCALHOST = ''
-PORT = 2161
+LOCALHOST = ""
+#PORT = 2161
 #TODO testing with standa_client
 PORT = 54545
-LOCALHOST = 'localhost'
+#LOCALHOST = 'localhost'
 
 # Initialize stage:
 stage = ximcStage.StandaStage()
 stage.connect()
+
 
 """This sample program, based on the one in the standard library documentation, receives incoming messages and echos them back to the sender. It starts by creating a TCP/IP socket."""
 # Create a TCP/IP socket
@@ -80,7 +81,7 @@ while connection:
                 POS = POS.encode()
                 connection.sendall(POS)
             else:
-                new_position_in_as = float(data[3:]) / 10
+                new_position_in_as = float(data[3:])
                 print('MOV' + str(new_position_in_as))
                 stage.move_absolute_in_as(new_position_in_as)
                 POS = stage.POS
@@ -91,7 +92,7 @@ while connection:
                 connection.sendall(POS)
 
         elif data[:3] == "MVR":
-            new_position_in_as = float(data[3:]) / 10
+            new_position_in_as = float(data[3:])
             print('MVR: ' + str(new_position_in_as))
             stage.move_relative_in_as(new_position_in_as)
             POS = stage.POS

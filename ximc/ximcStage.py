@@ -40,14 +40,13 @@ class StandaStage(Stage.Stage):
         self.load_configurution()
         self.position_zero = 0
         self.TerraFaktor = 1
-        self.MicrostepMode = 1
+        self.MicrostepMode = 9
         self.StepsPerRev = 1
         self.Laser = 633 * 10 ** -9  # should be 633*10^-9
         self.LichtinLuft = 299705518
         self.velocity = 10
         self.device_id = None
         self.lib = lib
-
 
     # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     """Aus Instrument"""
@@ -63,8 +62,9 @@ class StandaStage(Stage.Stage):
                 return False
             else:
                 """rufe hier ximcStage_functionCalls get engine settings auf"""
-                self.Standa_get_engine_settings()
                 print('Verbundenes Gerät' + str(self.device_id))
+                self.Standa_get_engine_settings()
+
                 return True
 
     def disconnect(self):
@@ -104,9 +104,6 @@ class StandaStage(Stage.Stage):
         self.position["position_current_Steps"] = positionHandler.Position
         self.position["position_current_uSteps"] = positionHandler.uPosition
 
-    def set_zero_position(self):
-        self.lib.command_zero(self.device_id)  # "does this work?"
-
     def move_absolute_in_as(self, new_position_in_as):
         print('\nMove Ab in as aufgerufen!')
         print('neue Position in as: ' + repr(new_position_in_as))
@@ -114,29 +111,32 @@ class StandaStage(Stage.Stage):
         pos = self.position["position_new_Steps"]
         upos = self.position["position_new_uSteps"]
         print('neue Position in Steps: ' + str(pos) + ', uSteps: ' + str(upos))
+        print('on the move to it\n')
         self.lib.command_move(self.device_id, pos, upos)
 
-        if self.statusHandler():
-            print('Move Ab in as has arrived!')
-        else:
-            print('Move Ab in as something went wrong!')
+        # if self.statusHandler():
+        #     print('Move Ab in as has arrived!')
+        # else:
+        #     print('Move Ab in as something went wrong!')
 
-    def move_absolute_in_steps(self, new_position_fullSteps, new_position_uSteps):#TODO: falls uSteps größer als 256, dann wird fahrergebnis negativ gewertet....
+    def move_absolute_in_steps(self, new_position_fullSteps,
+                               new_position_uSteps):  # TODO: falls uSteps größer als 256, dann wird fahrergebnis negativ gewertet....
         print('\nMove Ab in steps aufgerufen!')
         self.position["position_new_Steps"] = new_position_fullSteps
         self.position["position_new_uSteps"] = new_position_uSteps
         print('neue Position in steps: ' + repr(self.position["position_new_Steps"]) + ', uSteps: ' + repr(
             self.position["position_new_uSteps"]))
-        result=self.lib.command_move(self.device_id, self.position["position_new_Steps"], self.position["position_new_uSteps"])
+        result = self.lib.command_move(self.device_id, self.position["position_new_Steps"],
+                                       self.position["position_new_uSteps"])
         if result == Result.Ok:
             print('Move Ab in steps result ok!')
         else:
             print('Move Ab in steps result bad!')
             print('because we might still moving!')
-        if self.statusHandler():
-            print('Move Ab in steps has arrived!')
-        else:
-            print('Move Ab in steps something went wrong!')
+        #if self.statusHandler():
+       #     print('Move Ab in steps has arrived!')
+        #else:
+       #     print('Move Ab in steps something went wrong!')
 
     def move_relative_in_as(self, Shift_in_as):
         print('\nmove_relative_in_as aufgerufen!')
@@ -145,10 +145,6 @@ class StandaStage(Stage.Stage):
         print('position_new enthält jetzt die Shift Werte!')
         self.lib.command_movr(self.device_id, self.position["position_new_Steps"], self.position["position_new_uSteps"])
 
-        if self.statusHandler():
-            print('move_relative_in_as has arrived!')
-        else:
-            print('move_relative_in_as something went wrong!')
 
     def move_relative_in_steps(self, new_position_fullSteps, new_position_uSteps):
         print('\nmove_relative_in_steps aufgerufen!')
@@ -156,10 +152,7 @@ class StandaStage(Stage.Stage):
         self.position["position_new_uSteps"] = new_position_uSteps
 
         self.lib.command_movr(self.device_id, self.position["position_new_Steps"], self.position["position_new_uSteps"])
-        if self.statusHandler():
-            print('move_relative_in_as has arrived!')
-        else:
-            print('move_relative_in_as something went wrong!')
+
 
     def go_home(self):
 
@@ -171,20 +164,18 @@ class StandaStage(Stage.Stage):
         result = self.lib.command_home(self.device_id)
         if result == Result.Ok:
             print('go_home result ok')
-        if self.statusHandler():
-            print('go_home has arrived!')
-            return True
-        else:
-            print('go_home something went wrong!')
-            print('this usually never works so lets')
-            print('set home by move to zero position!')
-            step = -1*self.position["position_current_Steps"]
-            ustep = -1*self.position["position_current_uSteps"]
-            self.move_relative_in_steps(step, ustep)
-            print('go_home has arrived!')
-            return True
-
-
+        # if self.statusHandler():
+        #     print('go_home has arrived!')
+        #     return True
+        # else:
+        #     print('go_home something went wrong!')
+        #     print('this usually never works so lets')
+        #     print('set home by move to zero position!')
+        #     step = -1 * self.position["position_current_Steps"]
+        #     ustep = -1 * self.position["position_current_uSteps"]
+        #     self.move_relative_in_steps(step, ustep)
+        #     print('go_home has arrived!')
+        #     return True
 
     def get_home(self):
         print('\nget_home aufgerufen!')
@@ -199,7 +190,6 @@ class StandaStage(Stage.Stage):
                 else:
                     print(key, '->', getattr(x_home, key))
         return x_home
-
 
     def set_zero_position(self):
         print('\nset_zero_position aufgerufen!')
@@ -216,23 +206,26 @@ class StandaStage(Stage.Stage):
     def move_left(self):
         print('\nmove_left aufgerufen!')
         self.lib.command_left(self.device_id)
+        time.sleep(.100)
 
     def move_right(self):
         print('\nmove_right aufgerufen!')
         self.lib.command_right(self.device_id)
+        time.sleep(.100)
 
     def stop_move(self):
         print('\nstop_move aufgerufen!')
         self.lib.command_sstp(self.device_id)
-        time.sleep(.500)
+        time.sleep(.100)
 
     def fast_stop(self):
         print('\nfast_stop aufgerufen!')
         string = 'dont use me!!\n its hurting!'
         print(string)
         self.lib.command_stop(self.device_id)
-        time.sleep(.500)
+        time.sleep(.100)
         return string
+
     # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     """Stuff notwendig für Stage Befehle"""
 
@@ -241,12 +234,19 @@ class StandaStage(Stage.Stage):
                 (self.StepsPerRev * 3 / 2) * self.MicrostepValue()) * 10 ** +18  # Umrechungsfaktor in uSteps/as
 
     def position_current_in_as(self):
-        if self.position["position_new_uSteps"] >= self.MicrostepValue():
-            self.position["position_new_Steps"] += 1
-            self.position["position_new_uSteps"] -= self.MicrostepValue()
+        if self.position["position_current_Steps"] >= self.MicrostepValue():
+            self.position["position_current_Steps"] += 1
+            self.position["position_current_uSteps"] -= self.MicrostepValue()
             print('position korrigiert:')
-            print('position_new Steps' + repr(self.position["position_new_Steps"]) + ',position_new uSteps' + repr(
-                self.position["position_new_uSteps"]))
+            print('position_current_Steps' + repr(self.position["position_current_Steps"]) + ',position_current_uSteps' + repr(
+                self.position["position_current_uSteps"]))
+        if self.position["position_current_uSteps"] < 0:
+            self.position["position_current_Steps"] = self.position["position_current_Steps"] - 1
+            self.position["position_current_uSteps"] = float(
+                self.position["position_current_uSteps"]) + self.MicrostepValue()
+            print('position korrigiert:')
+            print('position_current_Steps' + repr(self.position["position_current_Steps"]) + ',position_current_uSteps' + repr(
+                self.position["position_current_uSteps"]))
         return self.roundTraditional(
             (self.position["position_current_Steps"] * self.MicrostepValue() +
              self.position["position_current_uSteps"]) * self.Umrechnungsfaktor() * self.TerraFaktor, 0)
@@ -261,7 +261,11 @@ class StandaStage(Stage.Stage):
             print(key, "=>", val)
 
     def MicrostepValue(self):  # works
-        return 2 ** self.MicrostepMode / 2
+        if self.MicrostepMode > 256:
+            self.MicrostepMode = 256
+        elif self.MicrostepMode < 1:
+            self.MicrostepMode = 1
+        return (2 ** self.MicrostepMode) / 2
 
     def statusHandler(self):
         gohomeflag = False
@@ -269,7 +273,7 @@ class StandaStage(Stage.Stage):
             gohomeflag = True
 
         while True:
-            time.sleep(.500)
+
             statushand = self.Standa_Status()
             self.position["position_current_Steps"] = statushand.CurPosition
             self.position["position_current_uSteps"] = statushand.uCurPosition
@@ -283,8 +287,9 @@ class StandaStage(Stage.Stage):
         if not gohomeflag:
             if self.position["position_current_uSteps"] < 0:
                 print('uSteps negativ. Corrigiere')
-                self.position["position_current_Steps"] = self.position["position_current_Steps"]-1
-                self.position["position_current_uSteps"] = float(self.position["position_current_uSteps"])+self.MicrostepValue()
+                self.position["position_current_Steps"] = self.position["position_current_Steps"] - 1
+                self.position["position_current_uSteps"] = float(
+                    self.position["position_current_uSteps"]) + self.MicrostepValue()
 
             if self.position["position_current_uSteps"] >= self.MicrostepValue():
                 print('uSteps zu groß. Corrigiere')
@@ -307,6 +312,7 @@ class StandaStage(Stage.Stage):
         print('pos in steps: ' + str(self.position["position_current_Steps"]) + ' uSteps: ' +
               str(self.position["position_current_uSteps"]))
         pos = self.position_current_in_as()
+        print('pos in as: ' + str(pos))
         return pos
 
     # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -396,7 +402,7 @@ class StandaStage(Stage.Stage):
                 print('StepsPerRev entsprechen nicht 200!\n Betrieb nicht konform!\nUmrechnungen Fehlerhaft!')
                 self.disconnect()
                 sys.exit()
-            return result
+            return engine_settings
         else:
             print('something went wrong!')
 
@@ -442,8 +448,23 @@ class StandaStage(Stage.Stage):
             print("Status.CurPosition : " + repr(x_status.CurPosition))
             print("Status.uCurPosition: " + repr(x_status.uCurPosition))
             print("Status.Flags: " + repr(hex(x_status.Flags)))
+            print("Status.EncSts: " + repr(hex(x_status.EncSts)))
+            print("Status.EncPosition: " + repr(hex(x_status.EncPosition)))
         else:
             print('something went wrong!')
+        if x_status.uCurPosition < 0:
+            print('uSteps negativ. Corrigiere')
+            x_status.CurPosition = x_status.CurPosition - 1
+            x_status.uCurPosition = int(x_status.uCurPosition) + int(self.MicrostepValue())
+            print("Status.CurPosition : " + repr(x_status.CurPosition))
+            print("Status.uCurPosition: " + repr(x_status.uCurPosition))
+        if x_status.uCurPosition >= self.MicrostepValue():
+            print('uSteps zu groß. Corrigiere')
+            x_status.CurPosition = x_status.CurPosition + 1
+            x_status.uCurPosition = int(x_status.uCurPosition) - int(self.MicrostepValue())
+            print("Status.CurPosition : " + repr(x_status.CurPosition))
+            print("Status.uCurPosition: " + repr(x_status.uCurPosition))
+
 
         # status_dict = self.obj_to_dict(x_status)
         return x_status
@@ -457,6 +478,7 @@ class StandaStage(Stage.Stage):
 		("AntiplaySpeed", c_uint),
 		("uAntiplaySpeed", c_uint),
 	]"""
+
         print("\nStanda_get_motor_settings")
         y_status = move_settings_t()
         result = self.lib.get_move_settings(self.device_id, byref(y_status))
@@ -466,6 +488,7 @@ class StandaStage(Stage.Stage):
                     pass
                     # do nothing
                 else:
+
                     print(key, '->', getattr(y_status, key))
         else:
             print('something went wrong!')
@@ -509,6 +532,103 @@ class StandaStage(Stage.Stage):
                 else:
                     print('something went wrong!')
                     return y_status
+
+    # gui sends Motionspeed acceleration deceleration für set motor settings + microstep mode für engine settings#TODO
+    def Standa_set_settings(self, Speed, Accel, Decel, MicroMode):
+        move_settings = move_settings_t()
+        result_move = self.lib.get_move_settings(self.device_id, byref(move_settings))
+
+        engine_settings = engine_settings_t()
+        result_engine = self.lib.get_engine_settings(self.device_id, byref(engine_settings))
+
+        if result_move == Result.Ok & result_engine == Result.Ok:
+            move_settings.Speed = Speed
+            move_settings.Accel = Accel
+            move_settings.Decel = Decel
+            result_move = self.lib.set_move_settings(self.device_id, byref(move_settings))
+
+            engine_settings.MicrostepMode = MicroMode
+            result_engine = self.lib.set_engine_settings(self.device_id, byref(engine_settings))
+
+            if result_move == Result.Ok & result_engine == Result.Ok:
+                return "Standa_set_settings worked"
+            else:
+                return "Standa_set_settings failed"
+        else:
+            return "Standa_set_settings failed"
+
+    def encoder_info(self):
+        encoder_information = encoder_information_t()
+        result_encoder = self.lib.get_encoder_information(self.device_id, byref(encoder_information))
+        if result_encoder is True:
+            for key in dir(encoder_information):
+                print(key, '->', getattr(encoder_information, key))
+        else:
+            print("encoder_information is False")
+        return encoder_information
+    def encoder_set(self):
+        encoder_information = encoder_settings_t()
+        result_encoder = self.lib.get_encoder_settings(self.device_id, byref(encoder_information))
+        if result_encoder is True:
+            for key in dir(encoder_information):
+                print(key, '->', getattr(encoder_information, key))
+        else:
+            print("encoder_set is False")
+        return encoder_information
+
+
+    def feedback_info(self):
+        feedback_settings = feedback_settings_t()
+        result_feedback = self.lib.get_feedback_settings(self.device_id, byref(feedback_settings))
+        if result_feedback is True:
+            for key in dir(feedback_settings):
+                print(key, '->', getattr(feedback_settings, key))
+        else:
+            print("feedback_info is False")
+        return feedback_settings
+    def gear_info(self):
+        gear_information = gear_information_t()
+        result_feedback = self.lib.get_gear_information(self.device_id, byref(gear_information))
+        if result_feedback is True:
+            for key in dir(gear_information):
+                print(key, '->', getattr(gear_information, key))
+        else:
+            print("gear_info is False")
+        return gear_information
+    def gear_settings(self):
+        gear_setting = gear_settings_t()
+        result_feedback = self.lib.get_gear_settings(self.device_id, byref(gear_setting))
+        if result_feedback is True:
+            for key in dir(gear_setting):
+                print(key, '->', getattr(gear_setting, key))
+        else:
+            print("gear_setting is False")
+        return gear_setting
+
+    def ctp_info(self):
+        """• #deﬁne CTP ENABLED 0x01
+            Position control is enabled, if ﬂag set.
+            • #deﬁne CTP BASE 0x02
+            Position control is based on revolution sensor, if this ﬂag is set; otherwise it is based on encoder.
+            • #deﬁne CTP ALARM ON ERROR 0x04
+            Set ALARM on mismatch, if ﬂag set.
+            • #deﬁne REV SENS INV 0x08
+            Sensor is active when it 0 and invert makes active level 1.
+            • #deﬁne CTP ERROR CORRECTION 0x10
+            Correct errors which appear when slippage if the ﬂag is set."""
+
+        ctp_information = ctp_settings_t()
+        result_feedback = self.lib.get_ctp_settings(self.device_id, byref(ctp_information))
+        if result_feedback is True:
+            print("ctp_information is True")
+            for key in dir(ctp_information):
+
+                print(key, '->', getattr(ctp_information, key))
+        else:
+            print("ctp_information is False")
+        return ctp_information
+
+
     # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     # control gui stuff
 
@@ -520,7 +640,13 @@ if __name__ == "__main__":
     stage.position_get()
     stage.Standa_get_position()
     stage.set_zero_position()
-    stage.move_absolute_in_as(153600)#TODO: Umrechnungen alle Richtig? vonwegen Terra und Gui to server_tcp to ximcStage
+    stage.Standa_Status()
+    stage.encoder_info()
+    stage.feedback_info()
+    stage.gear_info()
+    stage.gear_settings()
+    stage.ctp_info()
+    stage.encoder_set()
     # stage.Umrechnungsfaktor()
     # stage.set_zero_position()
     # stage.Standa_get_position()
@@ -553,7 +679,6 @@ if __name__ == "__main__":
     # stage.go_home()
 
     # TODO debuggen~~~~~~~~
-    #^^^^^^^debuggen^^^^^^^^^^^^^^
+    # ^^^^^^^debuggen^^^^^^^^^^^^^^
 
     stage.disconnect()
-

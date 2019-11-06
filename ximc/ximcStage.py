@@ -628,6 +628,14 @@ class StandaStage(Stage.Stage):
             print("ctp_information is False")
         return ctp_information
 
+    def get_serial(self):
+        x_serial = c_uint()
+        result = self.lib.get_serial_number(self.device_id, byref(x_serial))
+        if result == Result.Ok:
+            print("Serial: " + repr(x_serial.value))
+            return repr(x_serial.value)
+        else:
+            return 0
 
     # ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     # control gui stuff

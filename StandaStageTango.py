@@ -66,7 +66,7 @@ class PIStageTango(Device, metaclass=DeviceMeta):
                             min_value="250um", max_value="250um")
 
     def read_position_fs(self):
-        return self.stage.POS * 1000.0  # gives back the position in fs
+        return self.stage.POS / 1000.0  # gives back the position in fs
 
     position_unshifted_um = attribute(label="absolute position", dtype=float,
                                       display_level=DispLevel.EXPERT,
@@ -91,9 +91,22 @@ class PIStageTango(Device, metaclass=DeviceMeta):
     def write_cmd_move_absolute(self, new_pos):
         self.move_absolute(new_pos)
 
+    cmd_move_absolute_fs = attribute(access=AttrWriteType.WRITE,
+                                     dtype=float,
+                                     unit="fs")
+    @command(dtype_in=float)
+    def move_absolute_fs(self, new_position_in_fs):
+        self.set_state(DevState.MOVING)
+        new_position_in_as= new_position_in_fs*1000
+        self.stage.move_absolute_in_as(new_position_in_as)
+
+    def write_cmd_move_absolute_fs(self, new_pos):
+        self.move_absolute_fs(new_pos)
+
     cmd_move_relative_as = attribute(access=AttrWriteType.WRITE,
                                      dtype=float,
                                      unit="as")
+
 
     @command(dtype_in=float)
     def move_relative_as(self, new_position_in_as):
